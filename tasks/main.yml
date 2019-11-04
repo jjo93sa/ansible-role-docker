@@ -7,6 +7,7 @@
   when: not docker__version | d()
   tags:
       - install-docker
+      - always
 
 - name: Enable pinned Docker version
   template:
@@ -18,12 +19,14 @@
   when: docker__version | d()
   tags:
       - install-docker
+      - always
 
 - name: Install Docker's dependencies
   apt:
     name: "{{ docker__package_dependencies + docker__pip_dependencies }}"
   tags:
       - install-docker
+      - always
 
 - name: Add Docker's public GPG key to the APT keyring
   apt_key:
@@ -31,6 +34,7 @@
     url: "{{ docker__apt_key_url }}"
   tags:
       - install-docker
+      - always
 
 - name: Configure Docker's upstream APT repository
   apt_repository:
@@ -38,6 +42,7 @@
     update_cache: true
   tags:
       - install-docker
+      - always
 
 - name: Install Docker
   apt:
@@ -45,12 +50,14 @@
     state: "{{ docker__state }}"
   tags:
       - install-docker
+      - always
 
 - name: Install Virtualenv
   pip:
     name: "virtualenv"
   tags:
       - install-compose
+      - always
 
 - name: Install Python packages
   pip:
@@ -62,6 +69,7 @@
   when: item.name | d()
   tags:
       - install-compose
+      - always
 
 - name: Symlink Python binary to /usr/local/bin/python-docker
   file:
@@ -71,6 +79,7 @@
     state: "link"
   tags:
       - install-compose
+      - always
 
 - name: Symlink selected Python package binaries to /usr/local/bin
   file:
@@ -84,6 +93,7 @@
     - item.path | d() and item.src | d()
   tags:
       - install-compose
+      - always
 
 - name: Add user(s) to "docker" group
   user:
@@ -93,6 +103,7 @@
   loop: "{{ docker__users }}"
   tags:
       - users
+      - always
 
 - name: Create Docker configuration directories
   file:
@@ -106,6 +117,7 @@
     - "/etc/systemd/system/docker.service.d"
   tags:
       - config-docker
+      - always
 
 - name: Configure Docker daemon options (json)
   template:
@@ -118,6 +130,7 @@
   notify: ["Restart Docker"]
   tags:
       - config-docker
+      - always
 
 - name: Configure Docker daemon options (flags)
   template:
@@ -131,6 +144,7 @@
   notify: ["Restart Docker"]
   tags:
       - config-docker
+      - always
 
 - name: Configure Docker daemon environment variables
   template:
@@ -144,6 +158,7 @@
   notify: ["Restart Docker"]
   tags:
       - config-docker
+      - always
 
 - name: Configure custom systemd unit file override
   template:
@@ -157,6 +172,7 @@
   notify: ["Restart Docker"]
   tags:
       - config-docker
+      - always
 
 - name: Reload systemd daemon
   systemd:
@@ -166,11 +182,13 @@
         or docker__register_custom_override is changed
   tags:
       - restart
+      - always
 
 - name: Restart Docker now to make sure `docker login` works
   meta: "flush_handlers"
   tags:
       - restart
+      - always
 
 - name: Manage Docker registry login credentials
   docker_login:
@@ -220,3 +238,40 @@
   tags:
       - never
       - cron
+
+- name: Enable execution of different multi-architecture contatiners w/ QEMU
+  shell: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  tags:
+    - never
+    - experimental
+
+- name: Create Docker user config directory
+  file:
+    path: "~{{ item }}/.docker"
+    state: directory
+  loop: "{{ docker__users }}"
+  tags: [ 'never', 'experimental' ]
+
+- name: Configure experimental (CLI) features
+  template:
+    src: "etc/docker/user-config.json.j2"
+    dest: "~{{ item }}/.docker/config.json"
+    owner: "{{ item }}"
+    group: "{{ item }}"
+    mode: "0644"
+  loop: "{{ docker__users }}"
+  tags:
+    - never
+    - experimental
+
+- name: Create new buildx builder
+  shell: docker buildx create --name multiarch
+  tags:
+    - never
+    - experimental
+
+- name: Configure buildx builder
+  shell: docker buildx use multiarch
+  tags:
+    - never
+    - experimental
