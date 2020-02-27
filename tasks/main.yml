@@ -54,7 +54,9 @@
 
 - name: Install Virtualenv
   pip:
-    name: "virtualenv"
+    name:
+      - setuptools
+      - virtualenv
   tags:
       - install-compose
       - always
