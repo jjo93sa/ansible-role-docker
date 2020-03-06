@@ -21,7 +21,6 @@ with it then check out
 
 ## Supported platforms
 
-- Ubuntu 16.04 LTS (Xenial)
 - Ubuntu 18.04 LTS (Bionic)
 - Debian 9 (Stretch)
 - Debian 10 (Buster)
@@ -29,7 +28,7 @@ with it then check out
 ---
 
 *You are viewing the master branch's documentation which might be ahead of the
-latest release. [Switch to the latest release](https://github.com/nickjj/ansible-docker/tree/v1.9.1).*
+latest release. [Switch to the latest release](https://github.com/nickjj/ansible-docker/tree/v1.9.2).*
 
 ---
 
@@ -342,8 +341,11 @@ PIP package.
 # This will attempt to install the correct version of PIP based on what your
 # configured Ansible Python interpreter is set to (ie. Python 2 or 3).
 docker__pip_dependencies:
+  - "gcc"
   - "python-setuptools"
+  - "python{{ '3' if ansible_python.version.major == 3 else '' }}-dev"
   - "python{{ '3' if ansible_python.version.major == 3 else '' }}-pip"
+  - "virtualenv"
 ```
 
 #### Installing PIP packages

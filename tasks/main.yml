@@ -48,18 +48,6 @@
   apt:
     name: "docker-{{ docker__edition }}"
     state: "{{ docker__state }}"
-  tags:
-      - install-docker
-      - always
-
-- name: Install Virtualenv
-  pip:
-    name:
-      - setuptools
-      - virtualenv
-  tags:
-      - install-compose
-      - always
 
 - name: Install Python packages
   pip:
