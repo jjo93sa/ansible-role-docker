@@ -44,6 +44,32 @@
       - install-docker
       - always
 
+- name: Create Docker configuration directories
+  file:
+    path: "{{ item }}"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  loop:
+    - "/etc/docker"
+    - "/etc/systemd/system/docker.service.d"
+  tags:
+      - config-docker
+      - always
+
+- name: Configure Docker daemon options (json)
+  template:
+    src: "etc/docker/daemon.json.j2"
+    dest: "/etc/docker/daemon.json"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  when: docker__default_daemon_json | d() or docker__daemon_json | d()
+  tags:
+      - config-docker
+      - always
+
 - name: Install Docker
   apt:
     name: "docker-{{ docker__edition }}"
@@ -61,12 +87,13 @@
       - install-compose
       - always
 
-- name: Symlink Python binary to /usr/local/bin/python-docker
-  file:
-    path: "/usr/local/bin/python-docker"
-    src: "{{ docker__pip_virtualenv }}/bin/python"
-    force: true
-    state: "link"
+- name: Create python3-docker proxy script to access the Virtualenv's interpreter
+  template:
+    src: "usr/local/bin/python3-docker.j2"
+    dest: "/usr/local/bin/python3-docker"
+    owner: "root"
+    group: "root"
+    mode: "0755"
   tags:
       - install-compose
       - always
@@ -93,33 +120,6 @@
   loop: "{{ docker__users }}"
   tags:
       - users
-      - always
-
-- name: Create Docker configuration directories
-  file:
-    path: "{{ item }}"
-    state: "directory"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  loop:
-    - "/etc/docker"
-    - "/etc/systemd/system/docker.service.d"
-  tags:
-      - config-docker
-      - always
-
-- name: Configure Docker daemon options (json)
-  template:
-    src: "etc/docker/daemon.json.j2"
-    dest: "/etc/docker/daemon.json"
-    owner: "root"
-    group: "root"
-    mode: "0644"
-  when: docker__default_daemon_json | d() or docker__daemon_json | d()
-  notify: ["Restart Docker"]
-  tags:
-      - config-docker
       - always
 
 - name: Configure Docker daemon options (flags)
@@ -192,7 +192,7 @@
   loop: "{{ docker__registries }}"
   when: item.username | d() and item.password | d()
   vars:
-    ansible_python_interpreter: "{{ '/usr/bin/env python-docker' }}"
+    ansible_python_interpreter: "{{ '/usr/bin/env python3-docker' }}"
   tags:
       - never
       - registry
