@@ -112,6 +112,13 @@
       - install-compose
       - always
 
+- name: Set fact
+  set_fact:
+    docker__users: "{{ docker__users + docker__users_user | default([]) }}"
+  when: docker__users_user is defined
+  tags:
+    - always
+
 - name: Add user(s) to "docker" group
   user:
     name: "{{ item }}"
